@@ -12,7 +12,6 @@ Step 3: Download Repo
 git clone https://github.com/ARusama515/flaskregistrationapp.git
 
 Step 4: Create Virtual Environment
-
 python3 -m venv venv
 source venv/bin/activate
 
