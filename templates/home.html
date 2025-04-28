@@ -5,6 +5,11 @@
     <p>You are now logged in.</p>
 
     <button id="startBtn">Start</button>
+
+    <a href="{{ url_for('logout') }}">
+        <button style="margin-top: 20px;">Logout</button>
+    </a>
+
     <script>
         const startBtn = document.getElementById("startBtn");
         startBtn.addEventListener("click", () => {
