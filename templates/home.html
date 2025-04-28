@@ -5,9 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #startButton {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #stopButton {
+            background-color: #f44336;
+            color: white;
+        }
+        #status {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .profile {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to the Flask Registration App</h1>
+    <div class="profile">
+        <h2>Welcome, <span id="username">{{ username }}</span>!</h2>
+    </div>
+    <h1>Flask Registration App</h1>
     <button id="startButton" onclick="startAudioStream()">Start</button>
     <button id="stopButton" onclick="stopAudioStream()" disabled>Stop</button>
     <p id="status">Status: Idle</p>
