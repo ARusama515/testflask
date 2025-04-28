@@ -3,5 +3,48 @@
 {% block content %}
     <h2>Welcome, {{ session['username'] }}!</h2>
     <p>You are now logged in.</p>
-    <a href="{{ url_for('logout') }}">Logout</a>
+
+    <button id="startBtn">Start</button>
+    <script>
+        const startBtn = document.getElementById("startBtn");
+        startBtn.addEventListener("click", () => {
+            // Open microphone and WebSocket connection
+            startWebSocket();
+        });
+
+        function startWebSocket() {
+            const socket = new WebSocket("ws://127.0.0.1:5000/audio");
+            
+            socket.onopen = () => {
+                console.log("WebSocket connection opened.");
+                // Start recording audio from the microphone
+                startRecording(socket);
+            };
+
+            socket.onmessage = (event) => {
+                const response = JSON.parse(event.data);
+                // Play the response audio
+                const audio = new Audio(response.audio_url);
+                audio.play();
+            };
+
+            socket.onclose = () => {
+                console.log("WebSocket connection closed.");
+            };
+        }
+
+        function startRecording(socket) {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    const mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = function (event) {
+                        socket.send(event.data);
+                    };
+                    mediaRecorder.start(1000);  // Send audio in chunks every second
+                })
+                .catch(error => {
+                    console.error("Error accessing microphone: ", error);
+                });
+        }
+    </script>
 {% endblock %}

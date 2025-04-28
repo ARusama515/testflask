@@ -1,11 +1,42 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+import asyncio
+import websockets
+import json
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+import threading
 
-# Initialize the Flask application
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'  # Change this to a random secret key
+app.secret_key = 'your_secret_key_here'
 
 # In-memory user storage (replace with database in production)
 users = {}
+
+DEEPGRAM_API_KEY = 'your_deepgram_api_key'
+
+async def deepgram_connection(websocket, path):
+    # Connect to Deepgram Voice Agent WebSocket
+    async with websockets.connect(f"wss://agent.deepgram.com/agent?access_token={DEEPGRAM_API_KEY}") as deepgram_socket:
+        while True:
+            try:
+                audio_chunk = await websocket.recv()
+                # Forward the audio to Deepgram
+                await deepgram_socket.send(audio_chunk)
+                
+                # Receive the response from Deepgram (audio + text)
+                response = await deepgram_socket.recv()
+                
+                # Send the response back to the client
+                await websocket.send(response)
+            except Exception as e:
+                print("Error in WebSocket communication:", e)
+                break
+
+# WebSocket route for handling audio
+@app.route('/audio', methods=['GET'])
+def audio():
+    # Start a background thread to handle the WebSocket connection
+    thread = threading.Thread(target=asyncio.run, args=(deepgram_connection(websocket, path),))
+    thread.start()
+    return jsonify({"message": "WebSocket connection established."})
 
 @app.route('/')
 def home():
