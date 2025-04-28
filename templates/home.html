@@ -1,55 +1,61 @@
-{% extends "base.html" %}
-
-{% block content %}
-    <h2>Welcome, {{ session['username'] }}!</h2>
-    <p>You are now logged in.</p>
-
-    <button id="startBtn">Start</button>
-
-    <a href="{{ url_for('logout') }}">
-        <button style="margin-top: 20px;">Logout</button>
-    </a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Welcome to the Flask Registration App</h1>
+    <button onclick="startAudioStream()">Start</button>
+    <button onclick="stopAudioStream()">Stop</button>
 
     <script>
-        const startBtn = document.getElementById("startBtn");
-        startBtn.addEventListener("click", () => {
-            // Open microphone and WebSocket connection
-            startWebSocket();
-        });
+        let socket;
+        let audioContext;
+        let mediaStream;
+        let processor;
 
-        function startWebSocket() {
-            const socket = new WebSocket("ws://127.0.0.1:5000/audio");
-            
-            socket.onopen = () => {
-                console.log("WebSocket connection opened.");
-                // Start recording audio from the microphone
-                startRecording(socket);
+        async function startAudioStream() {
+            // Open WebSocket connection
+            socket = io.connect('http://localhost:5000');
+
+            // Access the microphone
+            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioContext = new AudioContext();
+            const source = audioContext.createMediaStreamSource(mediaStream);
+            processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+            source.connect(processor);
+            processor.connect(audioContext.destination);
+
+            // Send audio chunks to the server
+            processor.onaudioprocess = (event) => {
+                const audioData = event.inputBuffer.getChannelData(0);
+                socket.emit('start_audio_stream', { audio_chunk: audioData });
             };
 
-            socket.onmessage = (event) => {
-                const response = JSON.parse(event.data);
-                // Play the response audio
-                const audio = new Audio(response.audio_url);
+            // Handle agent response
+            socket.on('agent_response', (data) => {
+                const audioBlob = new Blob([data.response.audio], { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
                 audio.play();
-            };
-
-            socket.onclose = () => {
-                console.log("WebSocket connection closed.");
-            };
+            });
         }
 
-        function startRecording(socket) {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    const mediaRecorder = new MediaRecorder(stream);
-                    mediaRecorder.ondataavailable = function (event) {
-                        socket.send(event.data);
-                    };
-                    mediaRecorder.start(1000);  // Send audio in chunks every second
-                })
-                .catch(error => {
-                    console.error("Error accessing microphone: ", error);
-                });
+        function stopAudioStream() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+            }
+            if (processor) {
+                processor.disconnect();
+            }
+            if (socket) {
+                socket.disconnect();
+            }
         }
     </script>
-{% endblock %}
+</body>
+</html>
