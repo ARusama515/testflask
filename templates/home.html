@@ -8,8 +8,9 @@
 </head>
 <body>
     <h1>Welcome to the Flask Registration App</h1>
-    <button onclick="startAudioStream()">Start</button>
-    <button onclick="stopAudioStream()">Stop</button>
+    <button id="startButton" onclick="startAudioStream()">Start</button>
+    <button id="stopButton" onclick="stopAudioStream()" disabled>Stop</button>
+    <p id="status">Status: Idle</p>
 
     <script>
         let socket;
@@ -17,32 +18,54 @@
         let mediaStream;
         let processor;
 
+        const statusElement = document.getElementById('status');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+
         async function startAudioStream() {
-            // Open WebSocket connection
-            socket = io.connect('http://localhost:5000');
+            try {
+                // Update UI
+                statusElement.textContent = "Status: Connecting...";
+                startButton.disabled = true;
+                stopButton.disabled = false;
 
-            // Access the microphone
-            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            audioContext = new AudioContext();
-            const source = audioContext.createMediaStreamSource(mediaStream);
-            processor = audioContext.createScriptProcessor(4096, 1, 1);
+                // Open WebSocket connection
+                socket = io.connect('http://localhost:5000');
 
-            source.connect(processor);
-            processor.connect(audioContext.destination);
+                // Access the microphone
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new AudioContext();
+                const source = audioContext.createMediaStreamSource(mediaStream);
+                processor = audioContext.createScriptProcessor(4096, 1, 1);
 
-            // Send audio chunks to the server
-            processor.onaudioprocess = (event) => {
-                const audioData = event.inputBuffer.getChannelData(0);
-                socket.emit('start_audio_stream', { audio_chunk: audioData });
-            };
+                source.connect(processor);
+                processor.connect(audioContext.destination);
 
-            // Handle agent response
-            socket.on('agent_response', (data) => {
-                const audioBlob = new Blob([data.response.audio], { type: 'audio/wav' });
-                const audioUrl = URL.createObjectURL(audioBlob);
-                const audio = new Audio(audioUrl);
-                audio.play();
-            });
+                // Send audio chunks to the server
+                processor.onaudioprocess = (event) => {
+                    const audioData = event.inputBuffer.getChannelData(0);
+                    socket.emit('start_audio_stream', { audio_chunk: audioData });
+                };
+
+                // Handle agent response
+                socket.on('agent_response', (data) => {
+                    const audioBlob = new Blob([data.response.audio], { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+                });
+
+                // Handle errors
+                socket.on('error', (data) => {
+                    statusElement.textContent = `Status: Error - ${data.message}`;
+                });
+
+                statusElement.textContent = "Status: Streaming...";
+            } catch (error) {
+                statusElement.textContent = `Status: Error - ${error.message}`;
+                startButton.disabled = false;
+                stopButton.disabled = true;
+            }
         }
 
         function stopAudioStream() {
@@ -55,6 +78,11 @@
             if (socket) {
                 socket.disconnect();
             }
+
+            // Update UI
+            statusElement.textContent = "Status: Idle";
+            startButton.disabled = false;
+            stopButton.disabled = true;
         }
     </script>
 </body>
