@@ -51,6 +51,25 @@
     <button id="startButton" onclick="startAudioStream()">Start</button>
     <button id="stopButton" onclick="stopAudioStream()" disabled>Stop</button>
     <p id="status">Status: Idle</p>
+    <div id="transcription" style="margin-top: 20px; padding: 10px; background-color: #fff; border: 1px solid #ddd; border-radius: 5px;">
+        <h3>Transcription:</h3>
+        <p id="transcriptionText">No transcription yet.</p>
+    </div>
+    <p id="connectionStatus" style="margin-top: 10px; font-weight: bold; color: red;">Connection Status: Disconnected</p>
+    <div id="playback" style="margin-top: 20px;">
+        <h3>Playback:</h3>
+        <audio id="audioPlayer" controls style="width: 100%;"></audio>
+    </div>
+    <div id="feedback" style="margin-top: 20px;">
+        <h3>Was this response helpful?</h3>
+        <button onclick="sendFeedback('up')" style="background-color: #4CAF50; color: white; padding: 10px; border: none; border-radius: 5px;">👍 Yes</button>
+        <button onclick="sendFeedback('down')" style="background-color: #f44336; color: white; padding: 10px; border: none; border-radius: 5px;">👎 No</button>
+    </div>
+    <div id="history" style="margin-top: 20px; padding: 10px; background-color: #fff; border: 1px solid #ddd; border-radius: 5px;">
+        <h3>Session History:</h3>
+        <ul id="historyList"></ul>
+    </div>
+    <button onclick="window.location.href='/logout'" style="background-color: #555; color: white; padding: 10px; border: none; border-radius: 5px;">Logout</button>
 
     <script>
         let socket;
